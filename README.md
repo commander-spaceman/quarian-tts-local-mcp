@@ -1,50 +1,51 @@
 # Quarian TTS Local MCP
 
-Servidor MCP local y modular para generar un WAV con este flujo final:
+A modular local MCP server that produces WAV audio through this CPU-only flow:
 
 ```text
-texto → Kokoro TTS (CPU) → quarian-voice-filter-cli (CPU) → WAV
+text -> Kokoro TTS -> quarian-voice-filter-cli -> WAV
 ```
 
-El repositorio está deliberadamente limitado a voz quariana. No contiene ni
-contendrá OCR, traducción, STT, Ollama, imágenes ni estado de resultados de esos
-flujos.
+This repository is deliberately limited to Quarian voice generation. It does
+not contain and will not add OCR, translation, STT, Ollama, images, or state
+from those workflows.
 
-## Estado actual: fase 5 — pruebas, operación y documentación
+## Current status: phase 5 - testing, operations, and documentation
 
-El servidor MCP por `stdio` expone exactamente una herramienta. Genera Kokoro
-bajo demanda y encadena la CLI Rust `quarian-voice-filter-cli` sobre su WAV
-PCM16 mono de 24 kHz. La instalación incluye comprobaciones de regresión sin
-modelos, diagnósticos locales y pruebas de integración con métricas de señal.
-No existen herramientas de OCR, traducción, STT ni lectura de estado.
+The stdio MCP server exposes exactly one tool. It loads Kokoro on demand and
+runs the Rust `quarian-voice-filter-cli` against its 24 kHz mono PCM16 WAV.
+The installation provides model-free regression checks, local diagnostics, and
+integration tests with signal metrics. There are no OCR, translation, STT, or
+state-reading tools.
 
 ```text
 quarian-tts-local-mcp/
-├── config.py                # Rutas, límites y caché local de Kokoro
-├── common.py                # Logging, métricas y bloqueo del modelo
-├── errors.py                # Errores seguros y tipados
-├── audio.py                 # Nombres, validación y métricas PCM16/24 kHz
-├── tts.py                   # Síntesis Kokoro local y división por oraciones
-├── quarian_filter.py        # Build y ejecución segura de la CLI Rust
-├── quarian_tts.py           # Orquestación Kokoro → filtro y limpieza temporal
-├── mcp_tools.py             # Adaptador MCP seguro para la única herramienta
-├── server.py                # Punto de entrada MCP por stdio y registro de herramienta
-├── diagnose.py              # Diagnóstico offline de requisitos locales
-├── lmstudio-mcp.json.example
-├── models/                  # Pesos locales futuros; ignorados por Git
-├── outputs/                 # WAV futuros; ignorados por Git
-├── logs/                    # server.log local; ignorado por Git
-├── tests/
-├── pyproject.toml
-└── requirements.txt
+|-- config.py                # Paths, limits, and local Kokoro cache
+|-- common.py                # Logging, metrics, and model/filter locks
+|-- errors.py                # Safe typed errors
+|-- audio.py                 # PCM16/24 kHz WAV naming, validation, metrics
+|-- tts.py                   # Local Kokoro synthesis and sentence chunking
+|-- quarian_filter.py        # Safe Rust CLI build and execution
+|-- quarian_tts.py           # Kokoro -> filter orchestration and cleanup
+|-- mcp_tools.py             # Safe MCP adapter for the only tool
+|-- server.py                # Stdio MCP entry point and tool registration
+|-- diagnose.py              # Offline local-prerequisite diagnostic
+|-- lmstudio-mcp.json.example
+|-- models/                  # Future local weights; ignored by Git
+|-- outputs/                 # Generated WAV files; ignored by Git
+|-- logs/                    # Local server.log; ignored by Git
+|-- tests/
+|-- pyproject.toml
+`-- requirements.txt
 ```
 
-Todos los módulos Python viven en la raíz del repositorio; no existe ni se
-creará un directorio `src/`.
+All Python modules live in the repository root. There is no `src/` directory
+and one will not be created.
 
-## Entorno local
+## Local environment
 
-Se requiere Python 3.12 o 3.13. Cree un entorno aislado dentro del proyecto:
+Python 3.12 or 3.13 is required. Create an isolated environment inside the
+project:
 
 ```bash
 cd /home/juan/Dev/commander-spaceman/quarian-tts-local-mcp
@@ -55,130 +56,128 @@ cd /home/juan/Dev/commander-spaceman/quarian-tts-local-mcp
 "$PWD/.conda/bin/python" -m pip check
 ```
 
-El archivo fija PyTorch CPU, Kokoro, NumPy, SoundFile y MCP. No instala CUDA ni
-ninguna dependencia de OCR, STT, traducción u Ollama.
+The requirements pin CPU PyTorch, Kokoro, NumPy, SoundFile, and MCP. They do
+not install CUDA or any OCR, STT, translation, or Ollama dependency.
 
-En Ubuntu también se necesitan las bibliotecas del sistema usadas por Kokoro y
-SoundFile:
+On Ubuntu, install the system libraries used by Kokoro and SoundFile:
 
 ```bash
 sudo apt install espeak-ng libsndfile1
 ```
 
-## Pesos locales de Kokoro
+## Local Kokoro weights
 
-La síntesis sólo lee pesos locales y no descarga modelos durante una llamada.
-Debe existir esta estructura:
+Synthesis reads local weights only and does not download models during an MCP
+call. The following structure must exist:
 
 ```text
 models/kokoro/source/
-├── config.json
-├── kokoro-v1_0.pth
-└── voices/
-    ├── ef_dora.pt
-    ├── em_alex.pt          # opcional, si se quiere usar
-    └── em_santa.pt         # opcional, si se quiere usar
+|-- config.json
+|-- kokoro-v1_0.pth
+`-- voices/
+    |-- ef_dora.pt
+    |-- em_alex.pt           # Optional, needed only when selected
+    `-- em_santa.pt          # Optional, needed only when selected
 ```
 
-Para reutilizar una copia existente sin duplicarla:
+To reuse an existing copy without duplicating it:
 
 ```bash
 mkdir -p models/kokoro
 ln -s /home/juan/ai-models/Kokoro-82M models/kokoro/source
 ```
 
-Como alternativa, descargue los pesos públicos una vez fuera de una llamada MCP:
+Alternatively, download the public weights once outside an MCP call:
 
 ```bash
 .conda/bin/hf download hexgrad/Kokoro-82M --local-dir models/kokoro/source
 ```
 
-`models/` está ignorado por Git. Las voces aceptadas son `ef_dora`, `em_alex` y
-`em_santa`; una voz aceptada pero ausente en disco falla de forma explícita.
+`models/` is ignored by Git. Accepted voices are `ef_dora`, `em_alex`, and
+`em_santa`; selecting an accepted voice that is absent from disk fails clearly.
 
-## Rutas locales
+## Local paths
 
-Por defecto, el directorio raíz es este checkout. Un administrador puede mover
-la raíz de datos estableciendo `QUARIAN_TTS_ROOT` antes de iniciar el proceso.
-Las rutas derivadas son:
+By default, the project root is this checkout. An administrator can move the
+data root by setting `QUARIAN_TTS_ROOT` before starting the process. Derived
+paths are:
 
-- `models/`: futuros pesos locales;
-- `outputs/`: WAV finales e intermedios temporales de fases posteriores;
-- `logs/server.log`: registro rotativo que no usa stdout.
+- `models/`: local weights;
+- `outputs/`: final WAVs and temporary intermediate WAVs;
+- `logs/server.log`: rotating log that never uses stdout.
 
-Los parámetros MCP no pueden cambiar estas rutas.
+MCP parameters cannot change these paths.
 
-## Filtro Quarian local
+## Local Quarian filter
 
-El adaptador lee la CLI documentada del checkout local:
+The adapter uses the documented CLI from this local checkout:
 
 ```text
 /home/juan/Dev/commander-spaceman/quarian-voice-filter
 ```
 
-Requiere Rust/Cargo 1.96 o posterior. En la primera ejecución, compila sólo el
-paquete `quarian-voice-filter-cli`, con un trabajo de Cargo. Las descargas y los
-artefactos quedan aislados en `.quarian-cargo/` y `.quarian-filter-build/`;
-ninguno se versiona ni modifica el checkout externo.
+Rust/Cargo 1.96 or later is required. On its first run, the adapter builds only
+the `quarian-voice-filter-cli` package with one Cargo job. Downloads and build
+artifacts stay in `.quarian-cargo/` and `.quarian-filter-build/`; neither is
+versioned and the external checkout is never modified.
 
-Un administrador puede sustituir esas ubicaciones, antes de iniciar el proceso:
+An administrator can override locations and limits before starting the process:
 
-- `QUARIAN_FILTER_REPOSITORY`: checkout local alternativo;
-- `QUARIAN_FILTER_BIN`: ejecutable ya compilado; evita la compilación;
-- `QUARIAN_FILTER_TIMEOUT_SECONDS`: límite de ejecución, por defecto `120`;
-- `QUARIAN_FILTER_BUILD_TIMEOUT_SECONDS`: límite de compilación, por defecto
-  `600`.
+- `QUARIAN_FILTER_REPOSITORY`: alternate local checkout;
+- `QUARIAN_FILTER_BIN`: already-built executable that skips compilation;
+- `QUARIAN_FILTER_TIMEOUT_SECONDS`: execution limit, default `120`;
+- `QUARIAN_FILTER_BUILD_TIMEOUT_SECONDS`: build limit, default `600`.
 
-No son parámetros MCP. La entrada y salida se validan antes y después de llamar
-la CLI; ambas deben ser WAV PCM16, mono y de 24 kHz. Cada ejecución usa un
-nombre nuevo, nunca sobrescribe resultados, bloquea llamadas concurrentes al
-filtro y elimina el WAV Kokoro intermedio, incluso ante errores. Los logs sólo
-incluyen metadatos, tiempos, ruta y tamaño de stderr; no incluyen el texto ni
-el contenido de stderr.
+They are not MCP parameters. Input and output are validated before and after
+calling the CLI; both must be 24 kHz mono PCM16 WAVs. Every execution uses a
+new name, never overwrites a result, serializes concurrent filter calls, and
+removes the intermediate Kokoro WAV even after an error. Logs include only
+metadata, timings, paths, and stderr byte counts, never text or stderr content.
 
-## Herramienta MCP
+## MCP tool
 
-| Herramienta | Parámetros | Resultado |
+| Tool | Parameters | Result |
 |---|---|---|
-| `generate_quarian_audio` | `text` obligatorio; `voice="ef_dora"`; `speed=1.0` | Nuevo WAV Quarian absoluto en `outputs/` |
+| `generate_quarian_audio` | required `text`; `voice="ef_dora"`; `speed=1.0` | New absolute Quarian WAV path in `outputs/` |
 
-`text` admite hasta 12.000 caracteres. `voice` debe ser `ef_dora`, `em_alex` o
-`em_santa` y existir localmente. `speed` está entre `0.7` y `1.3`. La respuesta
-incluye ruta, duración, frecuencia y voz, pero nunca repite el texto enviado.
-Los errores de entrada, pesos, filtro, compilación y timeout se devuelven con
-mensajes seguros.
+`text` accepts up to 12,000 characters. `voice` must be `ef_dora`, `em_alex`,
+or `em_santa` and must exist locally. `speed` must be between `0.7` and `1.3`.
+The response includes the path, duration, sample rate, and selected voice, but
+never repeats submitted text. Input, weight, filter, build, and timeout errors
+are returned through safe messages.
 
 ## LM Studio
 
-No sobrescriba su configuración completa. Añada o reemplace sólo la entrada
-`quarian-tts-local` de [`lmstudio-mcp.json.example`](lmstudio-mcp.json.example)
-en su archivo MCP de LM Studio. Tras recargar MCP debe aparecer una sola
-herramienta: `generate_quarian_audio`.
+Do not overwrite your complete configuration. Add or replace only the
+`quarian-tts-local` entry from
+[`lmstudio-mcp.json.example`](lmstudio-mcp.json.example) in the LM Studio MCP
+configuration. After reloading MCP, exactly one tool should appear:
+`generate_quarian_audio`.
 
-## Diagnóstico operativo
+## Operational diagnostic
 
-Antes de conectar LM Studio, compruebe requisitos sin cargar Kokoro, compilar
-Rust ni generar audio:
+Before connecting LM Studio, inspect prerequisites without loading Kokoro,
+building Rust, or generating audio:
 
 ```bash
 .conda/bin/python diagnose.py
-# Después de instalar el proyecto de forma editable:
+# After installing the editable project:
 quarian-tts-diagnose
 ```
 
-El informe termina en `READY` sólo si encuentra el intérprete compatible,
-dependencias Python, directorios escribibles, pesos y voz local, y una CLI
-Quarian ya compilada **o** un checkout y Cargo listos para compilar. No muestra
-texto de usuario, tokens ni contenido de audio. Corrija cualquier línea
-`MISSING` antes de iniciar LM Studio.
+The report ends in `READY` only when it finds a supported interpreter, Python
+dependencies, writable directories, local weights and voice, plus either a
+built Quarian CLI or a checkout and Cargo ready to build it. It does not show
+user text, tokens, or audio content. Resolve every `MISSING` line before
+starting LM Studio.
 
-Los resultados, pesos, cachés de Cargo y logs permanecen locales e ignorados
-por Git. Los WAV pueden contener contenido sensible: elimínelos manualmente
-cuando ya no sean necesarios.
+Results, weights, Cargo caches, and logs remain local and are ignored by Git.
+WAV files may contain sensitive content; delete them manually when they are no
+longer needed.
 
-## Pruebas y regresión
+## Tests and regression checks
 
-La batería rápida es determinista y no carga pesos, Kokoro ni Cargo:
+The fast suite is deterministic and does not load weights, Kokoro, or Cargo:
 
 ```bash
 .conda/bin/python -m compileall -q audio.py common.py config.py diagnose.py errors.py tts.py quarian_filter.py quarian_tts.py mcp_tools.py server.py
@@ -186,42 +185,43 @@ La batería rápida es determinista y no carga pesos, Kokoro ni Cargo:
 .conda/bin/python -m pip check
 ```
 
-Incluye arranque MCP, esquema de la única herramienta, límites de entrada,
-división de texto, formato y métricas WAV, clasificación de fallos del filtro y
-limpieza del intermedio. La salida enumera cada prueba y termina con el número
-de verificaciones completadas.
+It covers MCP startup and the single-tool schema, input limits, text chunking,
+WAV format and metrics, filter-error classification, and intermediate-file
+cleanup. The output lists each test and ends with the total number of completed
+checks.
 
-Tras preparar los pesos, ejecute las integraciones de CPU. Crean WAVs únicos en
-`outputs/`; cada una verifica cabecera, muestras finitas, pico y RMS positivos:
+After preparing local weights, run the CPU integration checks. They create
+unique WAVs in `outputs/`; each verifies its header, finite samples, positive
+peak, and positive RMS:
 
 ```bash
-# Sólo Kokoro.
+# Kokoro only.
 .conda/bin/python tests/test_kokoro_synthesis.py
 
-# Kokoro seguido del filtro; también comprueba que los bytes cambiaron.
+# Kokoro followed by the Quarian filter; also verifies the bytes changed.
 .conda/bin/python tests/test_quarian_synthesis.py
 
-# La misma síntesis, invocada mediante un cliente MCP en memoria.
+# The same synthesis invoked through an in-memory MCP client.
 .conda/bin/python tests/test_mcp_quarian_tool.py
 ```
 
-Los límites son 12.000 caracteres, velocidad entre `0.7` y `1.3`, y fragmentos
-de hasta 800 caracteres separados preferentemente por oraciones. Las
-operaciones sobre el modelo y filtro se serializan dentro del proceso y nunca
-se registra el texto sintetizado.
+The limits are 12,000 characters, speeds from `0.7` to `1.3`, and chunks up to
+800 characters split preferentially at sentence boundaries. Model and filter
+operations are serialized within the process, and synthesized text is never
+logged.
 
-## Revisión auditiva y diagnóstico de fallos
+## Listening review and troubleshooting
 
-Las cabeceras y métricas confirman integridad técnica, no calidad percibida.
-Escuche una muestra corta tras cambiar versiones, voz o parámetros locales y
-compruebe inteligibilidad, ausencia de cortes, saturación/clipping y el efecto
-Quarian esperado. Puede abrir un resultado con:
+Headers and signal metrics prove technical integrity, not perceived quality.
+Listen to a short sample after changing versions, voices, or local parameters.
+Check intelligibility, missing segments, saturation or clipping, and the
+expected Quarian effect. Open a generated result with:
 
 ```bash
 xdg-open outputs/quarian_audio_YYYYMMDD_HHMMSS_microseconds_UUID.wav
 ```
 
-Para investigar una operación, consulte sólo los metadatos locales:
+To investigate an operation, inspect only local metadata:
 
 ```bash
 tail -n 80 logs/server.log
@@ -229,16 +229,16 @@ tail -n 80 logs/server.log
 .conda/bin/python -m pip check
 ```
 
-- Si faltan pesos o una voz, repare `models/kokoro/source/` y ejecute el
-diagnóstico otra vez.
-- Si falta Cargo/check-out, instale Rust 1.96+, configure
-  `QUARIAN_FILTER_REPOSITORY` o use `QUARIAN_FILTER_BIN`.
-- Si el filtro agota recursos o vence el timeout, reduzca el texto, cierre
-  procesos pesados y ajuste los timeouts sólo como administrador antes de
-  iniciar el servidor.
-- Si LM Studio no descubre la herramienta, compruebe las rutas de
-  `lmstudio-mcp.json.example`, recargue MCP y confirme que el diagnóstico está
-  en `READY`.
+- If weights or a voice are missing, repair `models/kokoro/source/` and run the
+  diagnostic again.
+- If Cargo or the checkout is missing, install Rust 1.96+, configure
+  `QUARIAN_FILTER_REPOSITORY`, or use `QUARIAN_FILTER_BIN`.
+- If the filter exhausts resources or times out, reduce the text, close
+  memory-heavy processes, and adjust timeouts only as an administrator before
+  starting the server.
+- If LM Studio does not discover the tool, check the paths in
+  `lmstudio-mcp.json.example`, reload MCP, and confirm the diagnostic is
+  `READY`.
 
-`server.py` es un servidor MCP por `stdio`, por lo que al ejecutarlo
-directamente esperará mensajes del protocolo y no abre una interfaz de terminal.
+`server.py` is an MCP stdio server. Running it directly waits for protocol
+messages and does not open a terminal user interface.
