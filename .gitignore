@@ -1,0 +1,21 @@
+# Entornos Python locales
+.conda/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Datos y artefactos locales
+models/*
+!models/.gitkeep
+outputs/*
+!outputs/.gitkeep
+logs/*
+!logs/.gitkeep
+.quarian-cargo/
+.quarian-filter-build/
+
+# Empaquetado
+build/
+dist/
+*.egg-info/
