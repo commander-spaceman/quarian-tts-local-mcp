@@ -21,10 +21,11 @@ async def main() -> None:
     tool = tools.tools[0]
     assert tool.name == "generate_quarian_audio", tool.name
     schema = tool.input_schema
-    assert set(schema.get("properties", {})) == {"text", "voice", "speed"}, schema
+    assert set(schema.get("properties", {})) == {"text", "voice", "speed", "language"}, schema
     assert schema.get("required") == ["text"], schema
     assert schema["properties"]["speed"].get("minimum") == 0.7, schema
     assert schema["properties"]["speed"].get("maximum") == 1.3, schema
+    assert schema["properties"]["language"].get("default") == "es", schema
     print("PASS: MCP exposes only generate_quarian_audio with the expected schema.")
 
 

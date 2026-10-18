@@ -33,9 +33,13 @@ def main() -> None:
     assert long_word_chunks == ["abcde", "fghij", "kl"], long_word_chunks
     assert all(len(chunk) <= 5 for chunk in long_word_chunks)
 
-    validate_tts_input("Valid text.", "ef_dora", 1.0)
+    assert validate_tts_input("Valid Spanish text.", "ef_dora", 1.0) == ("es", "ef_dora")
+    assert validate_tts_input("Valid English text.", None, 1.0, "en-us") == ("en_us", "af_heart")
     expect(ToolInputError, lambda: validate_tts_input("", "ef_dora", 1.0))
     expect(ToolInputError, lambda: validate_tts_input("text", "not_a_voice", 1.0))
+    expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", 1.0, "en_us"))
+    expect(ToolInputError, lambda: validate_tts_input("text", "af_heart", 1.0, "es"))
+    expect(ToolInputError, lambda: validate_tts_input("text", None, 1.0, "fr"))
     expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", True))
     expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", 1.31))
 

@@ -2,6 +2,7 @@
 """Manual CPU integration test for Kokoro followed by the local Quarian CLI."""
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -13,12 +14,20 @@ from quarian_tts import generate_quarian_wav
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--text", default="Hello. This is a short Quarian English voice test.")
+    parser.add_argument("--language", choices=("es", "en_us"), default="en_us")
+    parser.add_argument("--voice", default=None)
+    parser.add_argument("--speed", type=float, default=1.0)
+    args = parser.parse_args()
+
     result = None
     try:
         result = generate_quarian_wav(
-            "Hello. This is a short Quarian voice test.",
-            voice="ef_dora",
-            speed=1.0,
+            args.text,
+            voice=args.voice,
+            speed=args.speed,
+            language=args.language,
             keep_intermediate=True,
         )
         assert result.audio.path.is_file(), result.audio.path
@@ -33,7 +42,7 @@ def main() -> None:
         print(
             f"PASS: {result.audio.path} - {result.audio.duration_seconds:.2f}s, "
             f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, PCM16, "
-            f"peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}. "
+            f"language={result.language}, voice={result.voice}, peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}. "
             f"Kokoro={result.tts_seconds:.3f}s, filter={result.filter_seconds:.3f}s, "
             f"total={result.total_seconds:.3f}s."
         )

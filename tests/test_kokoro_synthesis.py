@@ -15,12 +15,13 @@ from tts import create_wav
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--text", default="Hello. This is a short local synthesis test.")
-    parser.add_argument("--voice", default="ef_dora")
+    parser.add_argument("--text", default="Hello. This is a short local English synthesis test.")
+    parser.add_argument("--language", choices=("es", "en_us"), default="en_us")
+    parser.add_argument("--voice", default=None)
     parser.add_argument("--speed", type=float, default=1.0)
     args = parser.parse_args()
 
-    result = create_wav(args.text, args.voice, args.speed)
+    result = create_wav(args.text, args.voice, args.speed, args.language)
     assert result.audio.path.is_file(), result.audio.path
     assert result.audio.duration_seconds > 0.0, result.audio
     assert result.audio.sample_rate == 24_000 and result.audio.channels == 1, result.audio
@@ -29,7 +30,7 @@ def main() -> None:
     print(
         f"PASS: {result.audio.path} - {result.audio.duration_seconds:.2f}s, "
         f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, {result.chunks} chunk(s), "
-        f"peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}."
+        f"language={result.language}, voice={result.voice}, peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}."
     )
 
 
