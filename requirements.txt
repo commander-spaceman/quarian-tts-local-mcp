@@ -1,0 +1,2 @@
+# Fase 1: transporte MCP por stdio. Las dependencias de Kokoro se añaden en la fase 2.
+mcp==2.3.0

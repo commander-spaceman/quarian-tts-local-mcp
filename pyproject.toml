@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quarian-tts-local-mcp"
+version = "0.1.0"
+description = "Local MCP server for Quarian text-to-speech"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = "MIT"
+authors = [{ name = "Local installation" }]
+dependencies = ["mcp==2.3.0"]
+
+[project.scripts]
+quarian-tts-mcp = "server:main"
+
+[tool.setuptools]
+py-modules = ["common", "config", "server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
