@@ -26,18 +26,18 @@ def expect(exception: type[Exception], callback: object) -> None:
 
 
 def main() -> None:
-    chunks = split_tts_text("  Uno.\nDos y tres.  ", maximum=8)
-    assert chunks == ["Uno.", "Dos y", "tres."], chunks
+    chunks = split_tts_text("  One.\nTwo and three.  ", maximum=8)
+    assert chunks == ["One.", "Two and", "three."], chunks
 
     long_word_chunks = split_tts_text("abcdefghijkl", maximum=5)
     assert long_word_chunks == ["abcde", "fghij", "kl"], long_word_chunks
     assert all(len(chunk) <= 5 for chunk in long_word_chunks)
 
-    validate_tts_input("Texto válido.", "ef_dora", 1.0)
+    validate_tts_input("Valid text.", "ef_dora", 1.0)
     expect(ToolInputError, lambda: validate_tts_input("", "ef_dora", 1.0))
-    expect(ToolInputError, lambda: validate_tts_input("texto", "not_a_voice", 1.0))
-    expect(ToolInputError, lambda: validate_tts_input("texto", "ef_dora", True))
-    expect(ToolInputError, lambda: validate_tts_input("texto", "ef_dora", 1.31))
+    expect(ToolInputError, lambda: validate_tts_input("text", "not_a_voice", 1.0))
+    expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", True))
+    expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", 1.31))
 
     with tempfile.TemporaryDirectory() as directory:
         valid = Path(directory) / "valid.wav"
