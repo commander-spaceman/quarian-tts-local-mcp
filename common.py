@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import time
 from logging.handlers import RotatingFileHandler
-from threading import RLock
+from threading import Lock, RLock
 from typing import Any
 
 from config import LOGS
@@ -28,6 +28,9 @@ if not LOG.handlers:
 # Kokoro uses shared model state. Keep all CPU synthesis operations serialized
 # within this MCP process until a future queueing design explicitly changes it.
 MODEL_LOCK = RLock()
+# The CLI is CPU/RAM intensive and writes a temporary WAV; run one filter at a
+# time per MCP process until explicit job scheduling is introduced.
+FILTER_LOCK = Lock()
 
 
 def log_result(operation: str, started: float, status: str, **details: Any) -> None:

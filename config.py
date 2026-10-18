@@ -33,3 +33,16 @@ MAX_AUDIO_BYTES = 100 * 1024 * 1024
 DEFAULT_VOICE = "ef_dora"
 SPANISH_VOICES = frozenset({"ef_dora", "em_alex", "em_santa"})
 SAMPLE_RATE = 24_000
+
+# The Rust filter is an administrator-configured local executable/check-out, not
+# an MCP parameter. Its build downloads and artifacts remain inside this project.
+DEFAULT_QUARIAN_REPOSITORY = Path("/home/juan/Dev/commander-spaceman/quarian-voice-filter")
+QUARIAN_REPOSITORY = Path(
+    os.environ.get("QUARIAN_FILTER_REPOSITORY", str(DEFAULT_QUARIAN_REPOSITORY))
+).expanduser().resolve()
+QUARIAN_BUILD_DIR = ROOT / ".quarian-filter-build"
+QUARIAN_CARGO_HOME = ROOT / ".quarian-cargo"
+QUARIAN_FILTER_NAME = "quarian-voice-filter-cli"
+QUARIAN_FILTER_BIN = os.environ.get("QUARIAN_FILTER_BIN")
+FILTER_TIMEOUT_SECONDS = float(os.environ.get("QUARIAN_FILTER_TIMEOUT_SECONDS", "120"))
+BUILD_TIMEOUT_SECONDS = float(os.environ.get("QUARIAN_FILTER_BUILD_TIMEOUT_SECONDS", "600"))
