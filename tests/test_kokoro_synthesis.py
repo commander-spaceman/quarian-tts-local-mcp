@@ -15,7 +15,7 @@ from tts import create_wav
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--text", default="Hola. Esta es una prueba corta de síntesis local.")
+    parser.add_argument("--text", default="Hello. This is a short local synthesis test.")
     parser.add_argument("--voice", default="ef_dora")
     parser.add_argument("--speed", type=float, default=1.0)
     args = parser.parse_args()
@@ -27,7 +27,7 @@ def main() -> None:
     metrics = measure_pcm16_mono_wav(result.audio.path, label="Kokoro result")
     assert metrics.finite and metrics.rms > 0.0, metrics
     print(
-        f"PASS: {result.audio.path} — {result.audio.duration_seconds:.2f}s, "
+        f"PASS: {result.audio.path} - {result.audio.duration_seconds:.2f}s, "
         f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, {result.chunks} chunk(s), "
         f"peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}."
     )

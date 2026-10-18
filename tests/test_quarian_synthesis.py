@@ -16,7 +16,7 @@ def main() -> None:
     result = None
     try:
         result = generate_quarian_wav(
-            "Hola. Esta es una prueba corta de voz quariana.",
+            "Hello. This is a short Quarian voice test.",
             voice="ef_dora",
             speed=1.0,
             keep_intermediate=True,
@@ -31,7 +31,7 @@ def main() -> None:
         metrics = measure_pcm16_mono_wav(result.audio.path, label="Quarian result")
         assert metrics.finite and metrics.rms > 0.0, metrics
         print(
-            f"PASS: {result.audio.path} — {result.audio.duration_seconds:.2f}s, "
+            f"PASS: {result.audio.path} - {result.audio.duration_seconds:.2f}s, "
             f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, PCM16, "
             f"peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}. "
             f"Kokoro={result.tts_seconds:.3f}s, filter={result.filter_seconds:.3f}s, "
