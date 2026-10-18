@@ -76,10 +76,10 @@ def split_tts_text(text: str, maximum: int = DEFAULT_CHUNK_CHARS) -> list[str]:
 def validate_tts_options(language: str, voice: str | None, speed: float) -> tuple[str, str]:
     """Validate language, language-compatible voice, and speed."""
     if not isinstance(language, str):
-        raise ToolInputError("Language must be 'es' or 'en_us'.")
-    canonical_language = LANGUAGE_ALIASES.get(language.lower())
+        raise ToolInputError("Language must be es, en, or en_us.")
+    canonical_language = LANGUAGE_ALIASES.get(language.strip().lower())
     if canonical_language is None:
-        raise ToolInputError("Unsupported language. Available languages: es, en_us.")
+        raise ToolInputError("Unsupported language. Available languages: es, en, en_us.")
 
     selected_voice = DEFAULT_VOICES[canonical_language] if voice is None else voice
     if not isinstance(selected_voice, str) or selected_voice not in LANGUAGE_VOICES[canonical_language]:

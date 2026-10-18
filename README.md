@@ -20,8 +20,8 @@ The stdio MCP server exposes exactly one tool:
 |---|---|---|
 | `generate_quarian_audio` | required `text`; `language="es"`; optional `voice`; `speed=1.0` | New absolute Quarian WAV path in `outputs/` |
 
-- Supported languages are `es` (Spanish, the default) and `en_us` (American
-  English). The `en-us` alias is also accepted.
+- Supported languages are `es` (Spanish, the default) and `en` (English). The
+  `en_us` and `en-us` aliases are also accepted for American English.
 - Omitting `voice` selects the default for the selected language: `ef_dora` for
   Spanish or `af_heart` for American English.
 - Spanish voices are `ef_dora`, `em_alex`, and `em_santa`. The supported

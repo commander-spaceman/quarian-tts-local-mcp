@@ -41,6 +41,7 @@ LANGUAGE_PIPELINE_CODES = {
 }
 LANGUAGE_ALIASES = {
     "es": "es",
+    "en": "en_us",
     "en_us": "en_us",
     "en-us": "en_us",
 }

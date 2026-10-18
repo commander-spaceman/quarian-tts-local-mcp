@@ -22,7 +22,13 @@ VoiceInput = Annotated[
 ]
 LanguageInput = Annotated[
     str,
-    Field(description="Synthesis language: es (Spanish) or en_us (American English)."),
+    Field(
+        description=(
+            "Synthesis language. Use exactly one of: es, en, en_us, or en-us. "
+            "For English, prefer the JSON value \"en\"."
+        ),
+        json_schema_extra={"enum": ["es", "en", "en_us", "en-us"]},
+    ),
 ]
 SpeedInput = Annotated[
     float,

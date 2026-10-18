@@ -26,6 +26,7 @@ async def main() -> None:
     assert schema["properties"]["speed"].get("minimum") == 0.7, schema
     assert schema["properties"]["speed"].get("maximum") == 1.3, schema
     assert schema["properties"]["language"].get("default") == "es", schema
+    assert schema["properties"]["language"].get("enum") == ["es", "en", "en_us", "en-us"], schema
     print("PASS: MCP exposes only generate_quarian_audio with the expected schema.")
 
 
