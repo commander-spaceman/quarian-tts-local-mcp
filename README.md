@@ -10,11 +10,12 @@ El repositorio está deliberadamente limitado a voz quariana. No contiene ni
 contendrá OCR, traducción, STT, Ollama, imágenes ni estado de resultados de esos
 flujos.
 
-## Estado actual: fase 3 — adaptador seguro del filtro Quarian
+## Estado actual: fase 4 — superficie MCP mínima
 
-El armazón MCP sigue sin registrar herramientas. El núcleo local genera Kokoro
-bajo demanda y ahora encadena la CLI Rust `quarian-voice-filter-cli` sobre su
-WAV PCM16 mono de 24 kHz. La única herramienta MCP llegará en la fase 4.
+El servidor MCP por `stdio` expone exactamente una herramienta. Genera Kokoro
+bajo demanda y encadena la CLI Rust `quarian-voice-filter-cli` sobre su WAV
+PCM16 mono de 24 kHz. No existen herramientas de OCR, traducción, STT ni
+lectura de estado.
 
 ```text
 quarian-tts-local-mcp/
@@ -25,7 +26,9 @@ quarian-tts-local-mcp/
 ├── tts.py                   # Síntesis Kokoro local y división por oraciones
 ├── quarian_filter.py        # Build y ejecución segura de la CLI Rust
 ├── quarian_tts.py           # Orquestación Kokoro → filtro y limpieza temporal
-├── server.py                # Punto de entrada MCP por stdio; sin herramientas aún
+├── mcp_tools.py             # Adaptador MCP seguro para la única herramienta
+├── server.py                # Punto de entrada MCP por stdio y registro de herramienta
+├── lmstudio-mcp.json.example
 ├── models/                  # Pesos locales futuros; ignorados por Git
 ├── outputs/                 # WAV futuros; ignorados por Git
 ├── logs/                    # server.log local; ignorado por Git
@@ -131,7 +134,26 @@ filtro y elimina el WAV Kokoro intermedio, incluso ante errores. Los logs sólo
 incluyen metadatos, tiempos, ruta y tamaño de stderr; no incluyen el texto ni
 el contenido de stderr.
 
-## Verificación de las fases 2 y 3
+## Herramienta MCP
+
+| Herramienta | Parámetros | Resultado |
+|---|---|---|
+| `generate_quarian_audio` | `text` obligatorio; `voice="ef_dora"`; `speed=1.0` | Nuevo WAV Quarian absoluto en `outputs/` |
+
+`text` admite hasta 12.000 caracteres. `voice` debe ser `ef_dora`, `em_alex` o
+`em_santa` y existir localmente. `speed` está entre `0.7` y `1.3`. La respuesta
+incluye ruta, duración, frecuencia y voz, pero nunca repite el texto enviado.
+Los errores de entrada, pesos, filtro, compilación y timeout se devuelven con
+mensajes seguros.
+
+## LM Studio
+
+No sobrescriba su configuración completa. Añada o reemplace sólo la entrada
+`quarian-tts-local` de [`lmstudio-mcp.json.example`](lmstudio-mcp.json.example)
+en su archivo MCP de LM Studio. Tras recargar MCP debe aparecer una sola
+herramienta: `generate_quarian_audio`.
+
+## Verificación de las fases 2 a 4
 
 Las pruebas de núcleo no cargan pesos ni sintetizan audio:
 
@@ -140,6 +162,8 @@ Las pruebas de núcleo no cargan pesos ni sintetizan audio:
 .conda/bin/python tests/test_bootstrap.py
 .conda/bin/python tests/test_tts_core.py
 .conda/bin/python tests/test_quarian_filter_core.py
+.conda/bin/python tests/test_mcp_schema.py
+.conda/bin/python tests/test_mcp_tool_errors.py
 ```
 
 Tras preparar los pesos, ejecute las comprobaciones manuales de CPU. Crean un
@@ -151,6 +175,9 @@ WAV único en `outputs/` y verifican sus cabeceras:
 
 # Kokoro seguido del filtro Quarian; también comprueba que los bytes cambiaron.
 .conda/bin/python tests/test_quarian_synthesis.py
+
+# La misma síntesis, invocada por un cliente MCP en memoria.
+.conda/bin/python tests/test_mcp_quarian_tool.py
 ```
 
 Los límites actuales son 12.000 caracteres, velocidad entre `0.7` y `1.3`, y
@@ -159,12 +186,10 @@ Las operaciones sobre el modelo se serializan dentro del proceso y nunca se
 registra el texto sintetizado.
 
 `server.py` es un servidor MCP por `stdio`, por lo que al ejecutarlo
-directamente esperará mensajes del protocolo; todavía anuncia un catálogo vacío
-de herramientas.
+directamente esperará mensajes del protocolo y no abre una interfaz de terminal.
 
 ## Próxima fase
 
-La fase 4 expondrá una sola herramienta MCP:
-`generate_quarian_audio(text, voice, speed)`. Será una envoltura de la
-orquestación ya validada, devolverá la ruta absoluta y metadatos seguros, y no
-incorporará herramientas de OCR, traducción o STT.
+La fase 5 consolida la verificación y operación: revisión auditiva, pruebas de
+regresión, métricas operativas y una guía de diagnóstico. No amplía la
+superficie MCP ni añade funciones ajenas a TTS quariano.
