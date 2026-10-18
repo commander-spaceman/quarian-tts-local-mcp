@@ -20,9 +20,10 @@ dependencies = [
 
 [project.scripts]
 quarian-tts-mcp = "server:main"
+quarian-tts-diagnose = "diagnose:main"
 
 [tool.setuptools]
-py-modules = ["audio", "common", "config", "errors", "mcp_tools", "quarian_filter", "quarian_tts", "server", "tts"]
+py-modules = ["audio", "common", "config", "diagnose", "errors", "mcp_tools", "quarian_filter", "quarian_tts", "server", "tts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
