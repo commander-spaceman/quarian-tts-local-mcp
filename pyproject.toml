@@ -10,13 +10,19 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = "MIT"
 authors = [{ name = "Local installation" }]
-dependencies = ["mcp==2.3.0"]
+dependencies = [
+  "mcp==2.3.0",
+  "torch==2.9.1+cpu",
+  "kokoro==0.9.4",
+  "soundfile==0.13.1",
+  "numpy==2.4.3",
+]
 
 [project.scripts]
 quarian-tts-mcp = "server:main"
 
 [tool.setuptools]
-py-modules = ["common", "config", "server"]
+py-modules = ["audio", "common", "config", "errors", "server", "tts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

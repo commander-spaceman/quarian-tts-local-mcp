@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import logging
+import time
 from logging.handlers import RotatingFileHandler
+from threading import RLock
+from typing import Any
 
 from config import LOGS
 
@@ -20,3 +23,20 @@ if not LOG.handlers:
     )
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
     LOG.addHandler(handler)
+
+
+# Kokoro uses shared model state. Keep all CPU synthesis operations serialized
+# within this MCP process until a future queueing design explicitly changes it.
+MODEL_LOCK = RLock()
+
+
+def log_result(operation: str, started: float, status: str, **details: Any) -> None:
+    """Log operation metadata and timing without ever logging synthesized text."""
+    fields = " ".join(f"{key}={value}" for key, value in details.items() if value is not None)
+    LOG.info(
+        "operation=%s model=Kokoro-82M status=%s seconds=%.3f %s",
+        operation,
+        status,
+        time.monotonic() - started,
+        fields,
+    )
