@@ -30,8 +30,26 @@ for directory in (MODELS, OUTPUTS, LOGS, KOKORO_HOME):
 
 MAX_TEXT_CHARS = 12_000
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
-DEFAULT_VOICE = "ef_dora"
-SPANISH_VOICES = frozenset({"ef_dora", "em_alex", "em_santa"})
+DEFAULT_LANGUAGE = "es"
+DEFAULT_VOICES = {
+    "es": "ef_dora",
+    "en_us": "af_heart",
+}
+LANGUAGE_PIPELINE_CODES = {
+    "es": "e",
+    "en_us": "a",
+}
+LANGUAGE_ALIASES = {
+    "es": "es",
+    "en_us": "en_us",
+    "en-us": "en_us",
+}
+LANGUAGE_VOICES = {
+    "es": frozenset({"ef_dora", "em_alex", "em_santa"}),
+    "en_us": frozenset({"af_heart"}),
+}
+# Kept as a compatibility alias for callers that omit language selection.
+DEFAULT_VOICE = DEFAULT_VOICES[DEFAULT_LANGUAGE]
 SAMPLE_RATE = 24_000
 
 # The Rust filter is an administrator-configured local executable/check-out, not

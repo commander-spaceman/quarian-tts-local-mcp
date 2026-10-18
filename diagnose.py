@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from config import (
-    DEFAULT_VOICE,
+    DEFAULT_VOICES,
     KOKORO_MODEL_DIR,
     LOGS,
     MODELS,
@@ -50,7 +50,7 @@ def _cargo_version(cargo: str | None) -> str:
     return completed.stdout.strip() if completed.returncode == 0 else "unavailable"
 
 
-def readiness_checks(voice: str = DEFAULT_VOICE) -> list[Check]:
+def readiness_checks() -> list[Check]:
     """Inspect prerequisites only; this function has no downloads, builds, or TTS."""
     checks: list[Check] = [
         Check("python", sys.version_info[:2] in {(3, 12), (3, 13)}, f"{sys.version.split()[0]}"),
@@ -58,19 +58,20 @@ def readiness_checks(voice: str = DEFAULT_VOICE) -> list[Check]:
     for name, directory in (("models", MODELS), ("outputs", OUTPUTS), ("logs", LOGS)):
         checks.append(Check(name, directory.is_dir() and os.access(directory, os.W_OK), str(directory)))
 
-    for module in ("mcp", "kokoro", "numpy", "soundfile", "torch"):
+    for module in ("mcp", "kokoro", "misaki", "numpy", "soundfile", "spacy", "torch", "en_core_web_sm"):
         checks.append(Check(f"python:{module}", importlib.util.find_spec(module) is not None, "installed"))
 
     config = KOKORO_MODEL_DIR / "config.json"
     weights = KOKORO_MODEL_DIR / "kokoro-v1_0.pth"
-    voice_path = KOKORO_MODEL_DIR / "voices" / f"{voice}.pt"
     checks.extend(
         [
             Check("kokoro-config", config.is_file(), str(config)),
             Check("kokoro-weights", weights.is_file(), str(weights)),
-            Check("kokoro-voice", voice_path.is_file(), str(voice_path)),
         ]
     )
+    for language, voice in DEFAULT_VOICES.items():
+        voice_path = KOKORO_MODEL_DIR / "voices" / f"{voice}.pt"
+        checks.append(Check(f"kokoro-voice:{language}", voice_path.is_file(), str(voice_path)))
 
     configured_binary = Path(QUARIAN_FILTER_BIN).expanduser() if QUARIAN_FILTER_BIN else None
     built_binary = QUARIAN_BUILD_DIR / "release" / QUARIAN_FILTER_NAME

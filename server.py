@@ -10,10 +10,10 @@ from mcp_tools import generate_quarian_audio
 mcp = MCPServer(
     "quarian-tts-local",
     title="Local Quarian TTS",
-    description="Generate local Quarian-filtered WAV audio from text with Kokoro and a CPU DSP filter.",
+    description="Generate local Quarian-filtered WAV audio from Spanish or American English text with Kokoro and a CPU DSP filter.",
     instructions=(
-        "Use generate_quarian_audio for a new local WAV. It accepts text, an installed "
-        "Spanish Kokoro voice, and speed; it returns the absolute output path."
+        "Use generate_quarian_audio for a new local WAV. It accepts text, language, "
+        "an optional language-compatible Kokoro voice, and speed; it returns the absolute output path."
     ),
     log_level="WARNING",
 )

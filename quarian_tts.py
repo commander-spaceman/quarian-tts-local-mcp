@@ -8,7 +8,7 @@ from pathlib import Path
 
 from audio import WavMetadata, new_wav_path, validate_pcm16_mono_wav
 from common import log_result
-from config import DEFAULT_VOICE
+from config import DEFAULT_LANGUAGE, DEFAULT_VOICE
 from quarian_filter import apply_quarian_filter
 from tts import KOKORO_MODEL_NAME, create_wav
 
@@ -22,12 +22,15 @@ class QuarianSynthesis:
     filter_seconds: float
     total_seconds: float
     intermediate_path: Path | None
+    language: str = DEFAULT_LANGUAGE
+    voice: str = DEFAULT_VOICE
 
 
 def generate_quarian_wav(
     text: str,
-    voice: str = DEFAULT_VOICE,
+    voice: str | None = None,
     speed: float = 1.0,
+    language: str = DEFAULT_LANGUAGE,
     *,
     keep_intermediate: bool = False,
 ) -> QuarianSynthesis:
@@ -40,7 +43,7 @@ def generate_quarian_wav(
     filter_seconds = 0.0
     try:
         tts_started = time.monotonic()
-        kokoro = create_wav(text, voice, speed)
+        kokoro = create_wav(text, voice, speed, language)
         tts_seconds = time.monotonic() - tts_started
         created = kokoro.audio.path
 
@@ -58,13 +61,16 @@ def generate_quarian_wav(
             filter_seconds=filter_seconds,
             total_seconds=time.monotonic() - started,
             intermediate_path=intermediate if keep_intermediate else None,
+            language=kokoro.language,
+            voice=kokoro.voice,
         )
         log_result(
             "generate_quarian_wav",
             started,
             "ok",
             filter="quarian-voice-filter-cli",
-            voice=voice,
+            language=result.language,
+            voice=result.voice,
             tts_seconds=f"{tts_seconds:.3f}",
             filter_seconds=f"{filter_seconds:.3f}",
             audio_seconds=f"{audio.duration_seconds:.3f}",
@@ -77,6 +83,7 @@ def generate_quarian_wav(
             started,
             "error",
             filter="quarian-voice-filter-cli",
+            language=language,
             voice=voice,
             tts_seconds=f"{tts_seconds:.3f}",
             filter_seconds=f"{filter_seconds:.3f}",

@@ -7,7 +7,7 @@ from typing import Annotated
 from pydantic import Field
 
 from common import LOG, log_result
-from config import DEFAULT_VOICE
+from config import DEFAULT_LANGUAGE
 from errors import QuarianTTSError, ToolInputError
 from quarian_tts import generate_quarian_wav
 
@@ -17,8 +17,12 @@ TextInput = Annotated[
     Field(description="Text to synthesize locally. Maximum 12000 characters."),
 ]
 VoiceInput = Annotated[
+    str | None,
+    Field(description="Optional voice compatible with language; omit it to select the language default."),
+]
+LanguageInput = Annotated[
     str,
-    Field(description="Installed Spanish Kokoro voice: ef_dora, em_alex, or em_santa."),
+    Field(description="Synthesis language: es (Spanish) or en_us (American English)."),
 ]
 SpeedInput = Annotated[
     float,
@@ -28,19 +32,21 @@ SpeedInput = Annotated[
 
 def generate_quarian_audio(
     text: TextInput,
-    voice: VoiceInput = DEFAULT_VOICE,
+    voice: VoiceInput = None,
     speed: SpeedInput = 1.0,
+    language: LanguageInput = DEFAULT_LANGUAGE,
 ) -> str:
-    """Generate one local Quarian-filtered PCM WAV from supplied text."""
+    """Generate one local Quarian-filtered PCM WAV from Spanish or English text."""
     started = time.monotonic()
     try:
-        result = generate_quarian_wav(text, voice, speed)
+        result = generate_quarian_wav(text, voice, speed, language)
         log_result(
             "generate_quarian_audio",
             started,
             "ok",
             filter="quarian-voice-filter-cli",
-            voice=voice,
+            language=result.language,
+            voice=result.voice,
             tts_seconds=f"{result.tts_seconds:.3f}",
             filter_seconds=f"{result.filter_seconds:.3f}",
             audio_seconds=f"{result.audio.duration_seconds:.3f}",
@@ -48,10 +54,18 @@ def generate_quarian_audio(
         )
         return (
             f"Generated Quarian WAV audio: {result.audio.path} "
-            f"({result.audio.duration_seconds:.1f} seconds, 24 kHz, voice {voice})."
+            f"({result.audio.duration_seconds:.1f} seconds, 24 kHz, "
+            f"language {result.language}, voice {result.voice})."
         )
     except ToolInputError as exc:
-        log_result("generate_quarian_audio", started, "input_error", filter="quarian-voice-filter-cli")
+        log_result(
+            "generate_quarian_audio",
+            started,
+            "input_error",
+            filter="quarian-voice-filter-cli",
+            language=language,
+            voice=voice,
+        )
         return str(exc)
     except QuarianTTSError as exc:
         log_result(
@@ -59,6 +73,8 @@ def generate_quarian_audio(
             started,
             "error",
             filter="quarian-voice-filter-cli",
+            language=language,
+            voice=voice,
             error=type(exc).__name__,
         )
         return f"Quarian audio generation failed: {exc}"
@@ -71,6 +87,8 @@ def generate_quarian_audio(
             started,
             "error",
             filter="quarian-voice-filter-cli",
+            language=language,
+            voice=voice,
             error=type(exc).__name__,
         )
         return "Quarian audio generation failed. Review logs/server.log."

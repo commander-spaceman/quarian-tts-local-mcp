@@ -1,4 +1,4 @@
-"""CPU-only local Kokoro synthesis; no MCP tool is registered in this phase."""
+"""CPU-only local bilingual Kokoro synthesis; MCP registration lives elsewhere."""
 from __future__ import annotations
 
 import os
@@ -11,7 +11,17 @@ from uuid import uuid4
 
 from audio import WavMetadata, ensure_output_target, new_wav_path, validate_pcm16_mono_wav
 from common import MODEL_LOCK
-from config import DEFAULT_VOICE, KOKORO_MODEL_DIR, MAX_TEXT_CHARS, SAMPLE_RATE, SPANISH_VOICES
+from config import (
+    DEFAULT_LANGUAGE,
+    DEFAULT_VOICE,
+    DEFAULT_VOICES,
+    KOKORO_MODEL_DIR,
+    LANGUAGE_ALIASES,
+    LANGUAGE_PIPELINE_CODES,
+    LANGUAGE_VOICES,
+    MAX_TEXT_CHARS,
+    SAMPLE_RATE,
+)
 from errors import KokoroModelUnavailable, ToolInputError
 
 KOKORO_MODEL_NAME = "Kokoro-82M"
@@ -25,6 +35,8 @@ class KokoroSynthesis:
 
     audio: WavMetadata
     chunks: int
+    language: str = DEFAULT_LANGUAGE
+    voice: str = DEFAULT_VOICE
 
 
 def split_tts_text(text: str, maximum: int = DEFAULT_CHUNK_CHARS) -> list[str]:
@@ -61,17 +73,37 @@ def split_tts_text(text: str, maximum: int = DEFAULT_CHUNK_CHARS) -> list[str]:
     return chunks
 
 
-def validate_tts_input(text: str, voice: str, speed: float) -> None:
+def validate_tts_options(language: str, voice: str | None, speed: float) -> tuple[str, str]:
+    """Validate language, language-compatible voice, and speed."""
+    if not isinstance(language, str):
+        raise ToolInputError("Language must be 'es' or 'en_us'.")
+    canonical_language = LANGUAGE_ALIASES.get(language.lower())
+    if canonical_language is None:
+        raise ToolInputError("Unsupported language. Available languages: es, en_us.")
+
+    selected_voice = DEFAULT_VOICES[canonical_language] if voice is None else voice
+    if not isinstance(selected_voice, str) or selected_voice not in LANGUAGE_VOICES[canonical_language]:
+        choices = ", ".join(sorted(LANGUAGE_VOICES[canonical_language]))
+        raise ToolInputError(
+            f"Unsupported voice for {canonical_language}. Available voices: {choices}."
+        )
+    if not isinstance(speed, (float, int)) or isinstance(speed, bool) or not 0.7 <= float(speed) <= 1.3:
+        raise ToolInputError("Speed must be between 0.7 and 1.3.")
+    return canonical_language, selected_voice
+
+
+def validate_tts_input(
+    text: str,
+    voice: str | None,
+    speed: float,
+    language: str = DEFAULT_LANGUAGE,
+) -> tuple[str, str]:
     """Check untrusted input before model loading or filesystem writes."""
     if not isinstance(text, str) or not text.strip():
         raise ToolInputError("There is no text to synthesize.")
     if len(text) > MAX_TEXT_CHARS:
         raise ToolInputError(f"Text exceeds the {MAX_TEXT_CHARS}-character TTS limit.")
-    if not isinstance(voice, str) or voice not in SPANISH_VOICES:
-        choices = ", ".join(sorted(SPANISH_VOICES))
-        raise ToolInputError(f"Unsupported voice. Available Spanish voices: {choices}.")
-    if not isinstance(speed, (float, int)) or isinstance(speed, bool) or not 0.7 <= float(speed) <= 1.3:
-        raise ToolInputError("Speed must be between 0.7 and 1.3.")
+    return validate_tts_options(language, voice, speed)
 
 
 def _model_files() -> tuple[Path, Path]:
@@ -85,14 +117,25 @@ def _model_files() -> tuple[Path, Path]:
 
 
 @lru_cache(maxsize=1)
-def kokoro_pipeline() -> Any:
-    """Load the CPU model lazily from local paths, never downloading during a call."""
-    from kokoro import KPipeline
+def kokoro_model() -> Any:
+    """Load the shared CPU model lazily from local paths only."""
     from kokoro.model import KModel
 
     config, weights = _model_files()
-    model = KModel(repo_id=KOKORO_REPOSITORY_ID, config=str(config), model=str(weights)).to("cpu").eval()
-    return KPipeline(lang_code="e", repo_id=KOKORO_REPOSITORY_ID, model=model, device="cpu")
+    return KModel(repo_id=KOKORO_REPOSITORY_ID, config=str(config), model=str(weights)).to("cpu").eval()
+
+
+@lru_cache(maxsize=2)
+def kokoro_pipeline(language: str) -> Any:
+    """Load a language-specific pipeline while reusing the shared local model."""
+    from kokoro import KPipeline
+
+    return KPipeline(
+        lang_code=LANGUAGE_PIPELINE_CODES[language],
+        repo_id=KOKORO_REPOSITORY_ID,
+        model=kokoro_model(),
+        device="cpu",
+    )
 
 
 def _voice_path(voice: str) -> Path:
@@ -102,12 +145,17 @@ def _voice_path(voice: str) -> Path:
     return path
 
 
-def create_wav(text: str, voice: str = DEFAULT_VOICE, speed: float = 1.0) -> KokoroSynthesis:
-    """Synthesize one unique, validated 24 kHz mono PCM16 WAV in outputs/."""
+def create_wav(
+    text: str,
+    voice: str | None = None,
+    speed: float = 1.0,
+    language: str = DEFAULT_LANGUAGE,
+) -> KokoroSynthesis:
+    """Synthesize a language-compatible voice to one validated 24 kHz mono PCM16 WAV."""
     import numpy as np
     import soundfile as sf
 
-    validate_tts_input(text, voice, speed)
+    language, voice = validate_tts_input(text, voice, speed, language)
     chunks = split_tts_text(text)
     if not chunks:
         raise ToolInputError("There is no text to synthesize.")
@@ -116,7 +164,7 @@ def create_wav(text: str, voice: str = DEFAULT_VOICE, speed: float = 1.0) -> Kok
     parts: list[Any] = []
     silence = np.zeros(int(0.12 * SAMPLE_RATE), dtype=np.float32)
     with MODEL_LOCK:
-        pipeline = kokoro_pipeline()
+        pipeline = kokoro_pipeline(language)
         for index, chunk in enumerate(chunks):
             generated = [np.asarray(result.audio, dtype=np.float32) for result in pipeline(
                 chunk,
@@ -140,4 +188,9 @@ def create_wav(text: str, voice: str = DEFAULT_VOICE, speed: float = 1.0) -> Kok
         os.replace(temporary, target)
     finally:
         temporary.unlink(missing_ok=True)
-    return KokoroSynthesis(audio=validate_pcm16_mono_wav(target, label="generated"), chunks=len(chunks))
+    return KokoroSynthesis(
+        audio=validate_pcm16_mono_wav(target, label="generated"),
+        chunks=len(chunks),
+        language=language,
+        voice=voice,
+    )
