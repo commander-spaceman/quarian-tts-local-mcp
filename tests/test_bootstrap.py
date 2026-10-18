@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the MCP server can negotiate without loading models or a filter."""
+"""Verify the MCP server can negotiate without loading models or the filter."""
 from __future__ import annotations
 
 import asyncio
@@ -21,8 +21,8 @@ async def main() -> None:
 
     async with Client(mcp) as client:
         tools = await client.list_tools()
-    assert tools.tools == [], tools.tools
-    print("PASS: MCP server negotiates successfully with no registered tools.")
+    assert [tool.name for tool in tools.tools] == ["generate_quarian_audio"], tools.tools
+    print("PASS: MCP server negotiates successfully without loading models or the filter.")
 
 
 if __name__ == "__main__":
