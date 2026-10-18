@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "quarian-tts-local": {
-      "command": "/home/juan/Dev/commander-spaceman/quarian-tts-local-mcp/.conda/bin/python",
+      "command": "/path/to/quarian-tts-local-mcp/.conda/bin/python",
       "args": [
-        "/home/juan/Dev/commander-spaceman/quarian-tts-local-mcp/server.py"
+        "/path/to/quarian-tts-local-mcp/server.py"
       ]
     }
   }

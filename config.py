@@ -55,7 +55,9 @@ SAMPLE_RATE = 24_000
 
 # The Rust filter is an administrator-configured local executable/check-out, not
 # an MCP parameter. Its build downloads and artifacts remain inside this project.
-DEFAULT_QUARIAN_REPOSITORY = Path("/home/juan/Dev/commander-spaceman/quarian-voice-filter")
+# By default, expect both local checkouts to be siblings. Set
+# QUARIAN_FILTER_REPOSITORY when the filter lives elsewhere.
+DEFAULT_QUARIAN_REPOSITORY = ROOT.parent / "quarian-voice-filter"
 QUARIAN_REPOSITORY = Path(
     os.environ.get("QUARIAN_FILTER_REPOSITORY", str(DEFAULT_QUARIAN_REPOSITORY))
 ).expanduser().resolve()

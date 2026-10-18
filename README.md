@@ -66,8 +66,8 @@ All Python modules live in the repository root. There is no `src/` directory.
 Python 3.12 or 3.13 is required. Create an isolated environment in the project:
 
 ```bash
-cd /home/juan/Dev/commander-spaceman/quarian-tts-local-mcp
-/home/juan/.miniconda3/bin/conda create --prefix "$PWD/.conda" python=3.12 -y
+cd /path/to/quarian-tts-local-mcp
+conda create --prefix "$PWD/.conda" python=3.12 -y
 "$PWD/.conda/bin/python" -m pip install --upgrade pip
 "$PWD/.conda/bin/python" -m pip install -r requirements.txt
 "$PWD/.conda/bin/python" -m spacy download en_core_web_sm
@@ -108,7 +108,7 @@ To reuse an existing local copy without duplicating it:
 
 ```bash
 mkdir -p models/kokoro
-ln -s /home/juan/ai-models/Kokoro-82M models/kokoro/source
+ln -s /path/to/Kokoro-82M models/kokoro/source
 ```
 
 Alternatively, download public weights once outside an MCP call:
@@ -127,11 +127,14 @@ By default, the project root is this checkout. An administrator can set
 paths are `models/`, `outputs/`, and `logs/server.log`; MCP parameters cannot
 change them.
 
-The adapter uses the documented CLI from this local checkout:
+By default, the adapter expects the filter checkout to be a sibling of this
+repository:
 
 ```text
-/home/juan/Dev/commander-spaceman/quarian-voice-filter
+../quarian-voice-filter
 ```
+
+Set `QUARIAN_FILTER_REPOSITORY` if your checkout is elsewhere.
 
 Rust/Cargo 1.96 or later is required. On its first call, the adapter builds only
 the `quarian-voice-filter-cli` package with one Cargo job. Downloads and build
@@ -153,9 +156,10 @@ or stderr content.
 
 ## LM Studio
 
-Do not overwrite your complete configuration. Add or replace only the
-`quarian-tts-local` entry from
-[`lmstudio-mcp.json.example`](lmstudio-mcp.json.example) in LM Studio's MCP
+Do not overwrite your complete configuration. In
+[`lmstudio-mcp.json.example`](lmstudio-mcp.json.example), replace each
+`/path/to/quarian-tts-local-mcp` placeholder with this repository's absolute
+path, then add or replace only its `quarian-tts-local` entry in LM Studio's MCP
 configuration. Reload MCP afterwards; exactly one tool should appear:
 `generate_quarian_audio`.
 
