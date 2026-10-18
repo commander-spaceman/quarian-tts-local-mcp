@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from audio import measure_pcm16_mono_wav
 from quarian_tts import generate_quarian_wav
 
 
@@ -27,9 +28,12 @@ def main() -> None:
         assert result.audio.path.read_bytes() != result.intermediate_path.read_bytes(), (
             "The Quarian CLI reported success but output bytes match its Kokoro input."
         )
+        metrics = measure_pcm16_mono_wav(result.audio.path, label="Quarian result")
+        assert metrics.finite and metrics.rms > 0.0, metrics
         print(
             f"PASS: {result.audio.path} — {result.audio.duration_seconds:.2f}s, "
-            f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, PCM16. "
+            f"{result.audio.sample_rate} Hz, {result.audio.channels} channel, PCM16, "
+            f"peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}. "
             f"Kokoro={result.tts_seconds:.3f}s, filter={result.filter_seconds:.3f}s, "
             f"total={result.total_seconds:.3f}s."
         )

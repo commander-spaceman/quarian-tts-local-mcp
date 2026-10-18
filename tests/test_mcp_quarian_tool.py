@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from audio import measure_pcm16_mono_wav
 from mcp import Client
 from server import mcp
 
@@ -21,8 +23,12 @@ async def main() -> None:
         )
     text = "\n".join(getattr(part, "text", "") for part in response.content)
     assert not response.is_error, text
-    assert text.startswith("Generated Quarian WAV audio: "), text
-    print(f"PASS: {text}")
+    match = re.fullmatch(r"Generated Quarian WAV audio: (.+) \([0-9.]+ seconds, 24 kHz, voice .+\)\.", text)
+    assert match, text
+    output = Path(match.group(1))
+    metrics = measure_pcm16_mono_wav(output, label="MCP result")
+    assert metrics.finite and metrics.rms > 0.0, metrics
+    print(f"PASS: {text} peak={metrics.peak:.6f}, RMS={metrics.rms:.6f}.")
 
 
 if __name__ == "__main__":
