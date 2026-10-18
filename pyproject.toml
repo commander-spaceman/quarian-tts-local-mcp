@@ -22,7 +22,7 @@ dependencies = [
 quarian-tts-mcp = "server:main"
 
 [tool.setuptools]
-py-modules = ["audio", "common", "config", "errors", "quarian_filter", "quarian_tts", "server", "tts"]
+py-modules = ["audio", "common", "config", "errors", "mcp_tools", "quarian_filter", "quarian_tts", "server", "tts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
