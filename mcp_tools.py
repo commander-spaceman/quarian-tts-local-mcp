@@ -25,7 +25,8 @@ LanguageInput = Annotated[
     Field(
         description=(
             "Synthesis language. Use exactly one of: es, en, en_us, or en-us. "
-            "For English, prefer the JSON value \"en\"."
+            "For English, prefer the JSON value \"en\"; do not include quote "
+            "marks, commas, or other punctuation in the value."
         ),
         json_schema_extra={"enum": ["es", "en", "en_us", "en-us"]},
     ),

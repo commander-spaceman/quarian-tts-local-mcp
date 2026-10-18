@@ -79,6 +79,12 @@ def validate_tts_options(language: str, voice: str | None, speed: float) -> tupl
         raise ToolInputError("Language must be es, en, or en_us.")
     canonical_language = LANGUAGE_ALIASES.get(language.strip().lower())
     if canonical_language is None:
+        # Some small tool-calling models leak JSON delimiters into a string
+        # argument (for example: ``en_us', ``). Repair only surrounding
+        # whitespace/quotes/commas, then still require an exact known alias.
+        repaired_language = language.strip(" \t\r\n,'\"").lower()
+        canonical_language = LANGUAGE_ALIASES.get(repaired_language)
+    if canonical_language is None:
         raise ToolInputError("Unsupported language. Available languages: es, en, en_us.")
 
     selected_voice = DEFAULT_VOICES[canonical_language] if voice is None else voice

@@ -36,6 +36,7 @@ def main() -> None:
     assert validate_tts_input("Valid Spanish text.", "ef_dora", 1.0) == ("es", "ef_dora")
     assert validate_tts_input("Valid English text.", None, 1.0, "en") == ("en_us", "af_heart")
     assert validate_tts_input("Valid English text.", None, 1.0, "en-us") == ("en_us", "af_heart")
+    assert validate_tts_input("Valid English text.", None, 1.0, "en_us', ") == ("en_us", "af_heart")
     expect(ToolInputError, lambda: validate_tts_input("", "ef_dora", 1.0))
     expect(ToolInputError, lambda: validate_tts_input("text", "not_a_voice", 1.0))
     expect(ToolInputError, lambda: validate_tts_input("text", "ef_dora", 1.0, "en_us"))
